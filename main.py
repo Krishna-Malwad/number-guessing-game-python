@@ -11,8 +11,14 @@ def load_scores():
     if os.path.exists(SCORE_FILE):
         with open(SCORE_FILE, "r") as file:
             for line in file:
-                level, score = line.strip().split(",")
-                scores[level] = int(score)
+                parts = line.strip().split(",")
+
+                # Skip invalid or empty lines
+                if len(parts) == 2:
+                    level, score = parts
+
+                    if level in scores:
+                        scores[level] = int(score)
 
     return scores
 
@@ -31,13 +37,20 @@ def save_score(level, score):
 
 # ---------- GAME LOGIC ----------
 def play_game():
+
     print("\n=== NUMBER GUESSING GAME ===")
     print("1. Easy (1-50) - 10 attempts")
     print("2. Medium (1-100) - 7 attempts")
     print("3. Hard (1-200) - 5 attempts")
 
-    choice = int(input("Choose level: "))
+    # Input validation for difficulty choice
+    try:
+        choice = int(input("Choose level: "))
+    except ValueError:
+        print("❌ Please enter a valid number!")
+        return
 
+    # Difficulty settings
     if choice == 1:
         level = "Easy"
         jackpot = random.randint(1, 50)
@@ -52,37 +65,64 @@ def play_game():
         attempts = 7
         base_score = 200
 
-    else:
+    elif choice == 3:
         level = "Hard"
         jackpot = random.randint(1, 200)
         max_range = 200
         attempts = 5
         base_score = 300
 
+    else:
+        print("❌ Invalid choice!")
+        return
+
     score = base_score
 
     print(f"\nGuess a number between 1 and {max_range}")
     print(f"You have {attempts} attempts\n")
 
+    # ---------- GUESS LOOP ----------
     while attempts > 0:
-        guess = int(input("Enter guess: "))
 
+        # Input validation for guesses
+        try:
+            guess = int(input("Enter guess: "))
+        except ValueError:
+            print("❌ Please enter numbers only!\n")
+            continue
+
+        # Range validation
+        if guess < 1 or guess > max_range:
+            print(f"❌ Enter a number between 1 and {max_range}\n")
+            continue
+
+        # Correct guess
         if guess == jackpot:
             print("\n🎉 Correct! You won!")
-            print(f"Score: {score}")
+            print(f"🏆 Score: {score}")
+
             save_score(level, score)
             return
 
+        # Hint system
         elif guess < jackpot:
-            print("Wrong! Go higher")
+            print("⬆ Wrong! Go higher")
+
         else:
-            print("Wrong! Go lower")
+            print("⬇ Wrong! Go lower")
+
+        # Very close hint
+        difference = abs(jackpot - guess)
+
+        if difference <= 5:
+            print("🔥 Very close!")
 
         attempts -= 1
         score -= 10
 
         print(f"Attempts left: {attempts}\n")
 
+    # ---------- GAME OVER ----------
     print("\n💀 Game Over!")
     print(f"The correct number was {jackpot}")
     print("Score: 0")
@@ -90,20 +130,27 @@ def play_game():
 
 # ---------- MAIN LOOP ----------
 def main():
+
     while True:
+
         play_game()
 
         again = input("\nPlay again? (y/n): ").lower()
+
         if again != "y":
             break
 
+    # Show high scores
     print("\nThanks for playing!")
 
     scores = load_scores()
+
     print("\n🏆 HIGH SCORES:")
+
     for level, score in scores.items():
-        print(level, ":", score)
+        print(f"{level}: {score}")
 
 
-# Run game
-main()
+# ---------- RUN PROGRAM ----------
+if __name__ == "__main__":
+    main()
